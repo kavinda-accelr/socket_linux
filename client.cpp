@@ -21,7 +21,7 @@ public:
         Cleanup(_client_socket);
     }
 
-    status Recv() {
+    Packet Recv() {
         Packet packet_rev;
         packet_rev.SetData(status::NOSTAT, -1);
 
@@ -35,14 +35,14 @@ public:
 
         std::cout << "Message received : "<< status_string[packet_rev.buffer[0]] << " - " << packet_rev.buffer[1] << std::endl;
 
-        return static_cast<status>(packet_rev.buffer[0]);
+        return packet_rev;
     }
 
-    void SendAck() {
-        std::cout << "Sending the ACK" << std::endl;
+    void SendAck(int data) {
+        std::cout << "Sending the ACK for : " << data << std::endl;
 
         Packet packet_send;
-        packet_send.SetData(status::ACCEPTED, 0);
+        packet_send.SetData(status::ACCEPTED, data);
 
         int byte_count = send(_client_socket, reinterpret_cast<void*>(&packet_send.buffer), sizeof(packet_send.buffer), 0);
 
@@ -96,13 +96,12 @@ private:
 int main(int args, char** argv)
 {
     ClientSocket client_socket;
-
     while (true)
     {
-        status stat = client_socket.Recv();
-        client_socket.SendAck();
+        Packet packet_recv = client_socket.Recv();
+        client_socket.SendAck(packet_recv.buffer[1]);
 
-        if(stat == status::TERMINATE) {
+        if(static_cast<status>(packet_recv.buffer[0]) == status::TERMINATE) {
             std::cout << "Client terminated" << std::endl;
             break;
         }

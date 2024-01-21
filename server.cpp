@@ -39,16 +39,21 @@ public:
         std::cout << "Message send : "<< status_string[packet_send.buffer[0]] << " - " << packet_send.buffer[1] << std::endl;
     }
 
-    void WaitForAck() {
+    void WaitForAck(int data) {
         Packet packet_rev;
         
-        std::cout << "Waiting for ACK" << std::endl;
+        std::cout << "Waiting for ACK for : " << data << std::endl;
         
         int byte_count = recv(_accept_socket, reinterpret_cast<void*>(&packet_rev.buffer), sizeof(packet_rev.buffer), 0);
 
         if(byte_count == -1)
         {
             std::cerr << "Receive failed - " << strerror(errno) << std::endl;;
+            exit(EXIT_FAILURE);
+        }
+
+        if(data != packet_rev.buffer[1]) {
+            std::cerr << "Invalid Ack" << std::endl;;
             exit(EXIT_FAILURE);
         }
 
@@ -126,6 +131,12 @@ private:
     }
 };
 
+void test_disconnect(int i, int disconnect_i) {
+    if(i == disconnect_i) {
+        std::cerr << "Test Disconnect" << std::endl;
+        exit(EXIT_FAILURE);
+    }
+}
 
 int main() {
 
@@ -140,8 +151,10 @@ int main() {
             stat = status::DATA;
         }
 
+        test_disconnect(i, 11);
+
         server_socket.Send(stat, i);
-        server_socket.WaitForAck();
+        server_socket.WaitForAck(i);
 
         std::this_thread::sleep_for(std::chrono::milliseconds(100));
     }
