@@ -77,9 +77,17 @@ private:
         client_service.sin_addr.s_addr = inet_addr(ip);
         client_service.sin_port = htons(port);
 
-        if (connect(client_socket, (sockaddr*)&client_service, sizeof(client_service)) < 0) {
-            std::cerr <<"client failed to connect - " << strerror(errno) << std::endl;
-            exit(EXIT_FAILURE);
+        const int attempts = 10;
+        int attempt=0;
+        while (connect(client_socket, (sockaddr*)&client_service, sizeof(client_service)) < 0) {
+            std::cerr << "attempt : " << attempt << ", retrying..." << std::endl;
+    
+            if(attempt > attempts) {
+                std::cerr << "client failed to connect - " << strerror(errno) << std::endl;
+                exit(EXIT_FAILURE);
+            }
+            attempt++;
+            sleep(1);
         }
         
         std::cerr << "client connected.\n";
