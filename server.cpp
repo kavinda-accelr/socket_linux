@@ -39,7 +39,7 @@ public:
             _accept_socket, 
             reinterpret_cast<void*>(&packet_send.buffer), 
             sizeof(packet_send.buffer), 
-            MSG_NOSIGNAL // 
+            MSG_NOSIGNAL // prevent from exiting the program
             );
 
         if(byte_count == -1)
