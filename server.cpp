@@ -169,12 +169,19 @@ int main() {
 
         switch (err_no)
         {
-        case EPIPE:
-            Reset_State(i);
-            server_socket.Reconnect();
-            break;
-        default:
-            break;
+            case 0: {
+                break;
+            }
+            case EPIPE: {
+                Reset_State(i);
+                server_socket.Reconnect();
+                break;
+            }
+            default: {
+                std::cerr << "Unexpected error occurred during send : " << strerror(err_no) << std::endl;
+                exit(EXIT_FAILURE);
+                break;
+            }
         }
 
         // server_socket.WaitForAck(i);
