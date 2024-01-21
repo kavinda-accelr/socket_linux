@@ -29,7 +29,7 @@ public:
 
         if(byte_count == -1)
         {
-            std::cerr<< "Receive failed - " << strerror(errno) << std::endl;;
+            std::cerr<< "Receive failed - " << strerror(errno) << std::endl;
             exit(EXIT_FAILURE);
         }
 
@@ -48,7 +48,7 @@ public:
 
         if(byte_count == -1)
         {
-            std::cerr<< "Send failed - " << strerror(errno) << std::endl;;
+            std::cerr<< "Send failed - " << strerror(errno) << std::endl;
             exit(EXIT_FAILURE);
         }
 
@@ -62,7 +62,7 @@ private:
         int client_socket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
 
         if (client_socket == -1) {
-            std::cerr << "Error creating socket - " << strerror(errno) << std::endl;;
+            std::cerr << "Error creating socket - " << strerror(errno) << std::endl;
             return 1;
         }
 
@@ -78,7 +78,7 @@ private:
         client_service.sin_port = htons(port);
 
         if (connect(client_socket, (sockaddr*)&client_service, sizeof(client_service)) < 0) {
-            std::cerr <<"client failed to connect - " << strerror(errno) << std::endl;;
+            std::cerr <<"client failed to connect - " << strerror(errno) << std::endl;
             exit(EXIT_FAILURE);
         }
         
@@ -98,10 +98,11 @@ int main(int args, char** argv)
     int loop_count=0;
     while (true)
     {
-        // test_disconnect(loop_count, 11);
+        test_disconnect(loop_count, 6);
 
         Packet packet_recv = client_socket.Recv();
-        client_socket.SendAck(packet_recv.buffer[1]);
+        
+        // client_socket.SendAck(packet_recv.buffer[1]);
 
         if(static_cast<status>(packet_recv.buffer[0]) == status::TERMINATE) {
             std::cout << "Client terminated" << std::endl;

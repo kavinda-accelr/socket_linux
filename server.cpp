@@ -23,20 +23,28 @@ public:
         Cleanup(_server_socket, _accept_socket);
     }
 
-    void Send(status stat, int data) {
+    void Reconnect() {
+        InitListen(_server_socket);
+        _accept_socket = WaitForNewConnection(_server_socket);
+    }
+
+    int Send(status stat, int data) {
         
         Packet packet_send;
+
         packet_send.SetData(stat, data);
 
-        int byte_count = send(_accept_socket, reinterpret_cast<void*>(&packet_send.buffer), sizeof(packet_send.buffer), 0);
+        int byte_count = 0;
+        byte_count = send(_accept_socket, reinterpret_cast<void*>(&packet_send.buffer), sizeof(packet_send.buffer), MSG_NOSIGNAL);
 
         if(byte_count == -1)
         {
-            std::cerr<< "Send failed - " << strerror(errno) << std::endl;;
-            exit(EXIT_FAILURE);
+            std::cerr<< "Send failed - " << strerror(errno) << std::endl;
+            return errno;
         }
 
         std::cout << "Message send : "<< status_string[packet_send.buffer[0]] << " - " << packet_send.buffer[1] << std::endl;
+        return 0;
     }
 
     void WaitForAck(int data) {
@@ -48,12 +56,12 @@ public:
 
         if(byte_count == -1)
         {
-            std::cerr << "Receive failed - " << strerror(errno) << std::endl;;
+            std::cerr << "Receive failed - " << strerror(errno) << std::endl;
             exit(EXIT_FAILURE);
         }
 
         if(data != packet_rev.buffer[1]) {
-            std::cerr << "Invalid Ack" << std::endl;;
+            std::cerr << "Invalid Ack" << std::endl;
             exit(EXIT_FAILURE);
         }
 
@@ -68,7 +76,7 @@ private:
         int server_socket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
 
         if (server_socket == -1) {
-            std::cerr << "Error creating socket - " << strerror(errno) << std::endl;;
+            std::cerr << "Error creating socket - " << strerror(errno) << std::endl;
             return 1;
         }
 
@@ -92,7 +100,7 @@ private:
         int bind_status = bind(server_socket, (sockaddr *)&server_address, sizeof(server_address));
 
         if (bind_status == -1) {
-            std::cerr << "Error binding socket - " << strerror(errno) << std::endl;;
+            std::cerr << "Error binding socket - " << strerror(errno) << std::endl;
             exit(EXIT_FAILURE);
         }
     }
@@ -102,11 +110,11 @@ private:
         int listen_status = listen(server_socket, 1);
 
         if (listen_status == -1) {
-            std::cerr << "Error listening on socket - " << strerror(errno) << std::endl;;;
+            std::cerr << "Error listening on socket - " << strerror(errno) << std::endl;;
             exit(EXIT_FAILURE);
         }
         
-        std::cout << "Listening for incoming connections..." << std::endl;;;
+        std::cout << "Listening for incoming connections..." << std::endl;;
     }
 
     int WaitForNewConnection(int server_socket)
@@ -116,7 +124,7 @@ private:
         int client_socket = accept(server_socket, (sockaddr*)&client_address, &client_address_length);
 
         if (client_socket == -1) {
-            std::cerr << "Error accepting connection - " << strerror(errno) << std::endl;;
+            std::cerr << "Error accepting connection - " << strerror(errno) << std::endl;
             return 1;
         }
 
@@ -135,10 +143,10 @@ int main() {
 
     ServerSocket server_socket;
 
-    const int cout = 100;
+    const int cout = 10;
     for(int i=0; i<cout; i++) {
 
-        // test_disconnect(loop_count, 11);
+        // test_disconnect(i, 6);
 
         status stat;
         if(i == cout - 1) {
@@ -147,8 +155,18 @@ int main() {
             stat = status::DATA;
         }
 
-        server_socket.Send(stat, i);
-        server_socket.WaitForAck(i);
+        int err_no = server_socket.Send(stat, i);
+
+        switch (err_no)
+        {
+        case EPIPE:
+            server_socket.Reconnect();
+            break;
+        default:
+            break;
+        }
+
+        // server_socket.WaitForAck(i);
 
         std::this_thread::sleep_for(std::chrono::milliseconds(100));
     }
