@@ -83,7 +83,7 @@ private:
 
         if (server_socket == -1) {
             std::cerr << "Error creating socket - " << strerror(errno) << std::endl;
-            return 1;
+            exit(EXIT_FAILURE);
         }
 
         return server_socket;
