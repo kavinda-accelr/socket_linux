@@ -145,7 +145,7 @@ private:
 };
 
 void Reset_State(int& cstat) {
-    cstat-=2;
+    cstat = cstat - 2;
 }
 
 int main() {
