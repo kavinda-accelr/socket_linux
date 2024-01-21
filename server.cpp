@@ -131,7 +131,7 @@ private:
 
         if (client_socket == -1) {
             std::cerr << "Error accepting connection - " << strerror(errno) << std::endl;
-            return 1;
+            exit(EXIT_FAILURE);
         }
 
         std::cout << "Connection accepted from " << inet_ntoa(client_address.sin_addr) << ":" << ntohs(client_address.sin_port) << "\n";
