@@ -108,7 +108,7 @@ private:
     {
         sockaddr_in client_address;
         socklen_t client_address_length = sizeof(client_address);
-        int client_socket = accept(server_socket, (struct sockaddr *)&client_address, &client_address_length);
+        int client_socket = accept(server_socket, (sockaddr*)&client_address, &client_address_length);
 
         if (client_socket == -1) {
             std::cerr << "Error accepting connection - " << strerror(errno) << std::endl;;

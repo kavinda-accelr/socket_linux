@@ -71,13 +71,13 @@ private:
 
     void ConnectSocket(int client_socket, const char* ip, uint16_t port)
     {
-        struct sockaddr_in client_service;
+        sockaddr_in client_service;
         memset(&client_service, 0, sizeof(client_service));
         client_service.sin_family = AF_INET;
         client_service.sin_addr.s_addr = inet_addr(ip);
         client_service.sin_port = htons(port);
 
-        if (connect(client_socket, (struct sockaddr *)&client_service, sizeof(client_service)) < 0) {
+        if (connect(client_socket, (sockaddr*)&client_service, sizeof(client_service)) < 0) {
             std::cerr <<"client failed to connect - " << strerror(errno) << std::endl;;
             exit(EXIT_FAILURE);
         }
