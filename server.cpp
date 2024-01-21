@@ -35,7 +35,12 @@ public:
         packet_send.SetData(stat, data);
 
         int byte_count = 0;
-        byte_count = send(_accept_socket, reinterpret_cast<void*>(&packet_send.buffer), sizeof(packet_send.buffer), MSG_NOSIGNAL);
+        byte_count = send(
+            _accept_socket, 
+            reinterpret_cast<void*>(&packet_send.buffer), 
+            sizeof(packet_send.buffer), 
+            MSG_NOSIGNAL // 
+            );
 
         if(byte_count == -1)
         {
@@ -139,6 +144,10 @@ private:
     }
 };
 
+void Reset_State(int& cstat) {
+    cstat-=2;
+}
+
 int main() {
 
     ServerSocket server_socket;
@@ -160,6 +169,7 @@ int main() {
         switch (err_no)
         {
         case EPIPE:
+            Reset_State(i);
             server_socket.Reconnect();
             break;
         default:
