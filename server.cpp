@@ -24,6 +24,7 @@ public:
     }
 
     void Reconnect() {
+        close(_accept_socket);
         InitListen(_server_socket);
         _accept_socket = WaitForNewConnection(_server_socket);
     }
