@@ -89,15 +89,17 @@ private:
     {
         close(client_socket);
     }
-
 };
-
 
 int main(int args, char** argv)
 {
     ClientSocket client_socket;
+
+    int loop_count=0;
     while (true)
     {
+        // test_disconnect(loop_count, 11);
+
         Packet packet_recv = client_socket.Recv();
         client_socket.SendAck(packet_recv.buffer[1]);
 
@@ -105,6 +107,8 @@ int main(int args, char** argv)
             std::cout << "Client terminated" << std::endl;
             break;
         }
+
+        loop_count++;
     }
 
     return 0;

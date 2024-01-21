@@ -19,4 +19,12 @@ struct Packet
         buffer[1] = data;
     }
 };
+
+void test_disconnect(int i, int disconnect_i) {
+    if(i == disconnect_i) {
+        std::cerr << "Test Disconnect" << std::endl;
+        exit(EXIT_SUCCESS);
+    }
+}
+
 #endif // __COMMON_H__

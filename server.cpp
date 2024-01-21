@@ -131,27 +131,21 @@ private:
     }
 };
 
-void test_disconnect(int i, int disconnect_i) {
-    if(i == disconnect_i) {
-        std::cerr << "Test Disconnect" << std::endl;
-        exit(EXIT_FAILURE);
-    }
-}
-
 int main() {
 
     ServerSocket server_socket;
 
-    int cout = 100;
+    const int cout = 100;
     for(int i=0; i<cout; i++) {
+
+        // test_disconnect(loop_count, 11);
+
         status stat;
         if(i == cout - 1) {
             stat = status::TERMINATE;
         }else {
             stat = status::DATA;
         }
-
-        test_disconnect(i, 11);
 
         server_socket.Send(stat, i);
         server_socket.WaitForAck(i);
