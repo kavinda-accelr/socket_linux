@@ -4,11 +4,17 @@
 #include <array>
 #include <string>
 
+#define stringify( name ) #name
+
 #define IP  "127.0.0.1"
 #define PORT 55555
 
 enum class status {NOSTAT=0, DATA=1, ACCEPTED=2, TERMINATE=3};
-std::array<std::string, 4> status_string {"NOSTAT", "DATA", "ACCEPTED", "TERMINATE"};
+std::array<std::string, 4> status_string {
+    stringify(status::NOSTAT), 
+    stringify(status::DATA), 
+    stringify(status::ACCEPTED), 
+    stringify(status::TERMINATE)};
 
 struct Packet
 {
