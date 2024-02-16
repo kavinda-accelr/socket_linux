@@ -59,7 +59,7 @@ private:
 
     int CreateTcpSocket()
     {
-        int client_socket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+        int client_socket = socket(AF_INET, SOCK_STREAM, 0);
 
         if (client_socket == -1) {
             std::cerr << "Error creating socket - " << strerror(errno) << std::endl;
@@ -89,6 +89,13 @@ private:
             attempt++;
             sleep(1);
         }
+
+        struct timeval tv;
+        tv.tv_sec = 3;  // n Secs Timeout
+        tv.tv_usec = 0;  // Not init'ing this can cause strange errors
+
+        setsockopt(client_socket, SOL_SOCKET, SO_SNDTIMEO, (char *)&tv,sizeof(struct timeval));
+        setsockopt(client_socket, SOL_SOCKET, SO_RCVTIMEO, (char *)&tv,sizeof(struct timeval));
         
         std::cerr << "client connected.\n";
     }
@@ -110,7 +117,7 @@ int main(int args, char** argv)
 
         Packet packet_recv = client_socket.Recv();
         
-        // client_socket.SendAck(packet_recv.buffer[1]);
+        client_socket.SendAck(packet_recv.buffer[1]);
 
         if(static_cast<status>(packet_recv.buffer[0]) == status::TERMINATE) {
             std::cout << "Client terminated" << std::endl;

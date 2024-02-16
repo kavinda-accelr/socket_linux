@@ -14,8 +14,16 @@ class ServerSocket{
 public:
     ServerSocket() {
         _server_socket = CreateTcpSocket();
+        
+        int opt = 1;
+        if (setsockopt(_server_socket, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) < 0) {
+            std::cerr << "Error setting opt - " << strerror(errno) << std::endl;
+            exit(EXIT_FAILURE);
+        }
+        
         BindSocket(_server_socket, IP, PORT);
         InitListen(_server_socket);
+        
         _accept_socket = WaitForNewConnection(_server_socket);
     }
 
@@ -41,7 +49,7 @@ public:
             reinterpret_cast<void*>(&packet_send.buffer), 
             sizeof(packet_send.buffer), 
             MSG_NOSIGNAL // prevent from exiting the program
-            );
+        );
 
         if(byte_count == -1)
         {
@@ -53,7 +61,7 @@ public:
         return 0;
     }
 
-    void WaitForAck(int data) {
+    int WaitForAck(int data) {
         Packet packet_rev;
         
         std::cout << "Waiting for ACK for : " << data << std::endl;
@@ -63,7 +71,7 @@ public:
         if(byte_count == -1)
         {
             std::cerr << "Receive failed - " << strerror(errno) << std::endl;
-            exit(EXIT_FAILURE);
+            return errno;
         }
 
         if(data != packet_rev.buffer[1]) {
@@ -72,6 +80,8 @@ public:
         }
 
         std::cout<< "Message received : "<< status_string[packet_rev.buffer[0]] << " - " << packet_rev.buffer[1] << std::endl;
+
+        return 0;
     }
 private:
     int _server_socket;
@@ -79,7 +89,7 @@ private:
 
     int CreateTcpSocket()
     {
-        int server_socket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+        int server_socket = socket(AF_INET, SOCK_STREAM, 0);
 
         if (server_socket == -1) {
             std::cerr << "Error creating socket - " << strerror(errno) << std::endl;
@@ -92,16 +102,10 @@ private:
     void BindSocket(int server_socket, const char* ip, uint16_t port)
     {
         sockaddr_in server_address;
-        std::memset(&server_address, 0, sizeof(server_address));
+        memset(&server_address, 0, sizeof(server_address));
         server_address.sin_family = AF_INET;
         server_address.sin_addr.s_addr = inet_addr(ip);
         server_address.sin_port = htons(port);
-
-        int opt = 1;
-        if (setsockopt(server_socket, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) < 0) {
-            std::cerr << "Error setting opt - " << strerror(errno) << std::endl;
-            exit(EXIT_FAILURE);
-        }
 
         int bind_status = bind(server_socket, (sockaddr *)&server_address, sizeof(server_address));
 
@@ -134,6 +138,13 @@ private:
             exit(EXIT_FAILURE);
         }
 
+        struct timeval tv;
+        tv.tv_sec = 3;  // n Secs Timeout
+        tv.tv_usec = 0;  // Not init'ing this can cause strange errors
+
+        setsockopt(client_socket, SOL_SOCKET, SO_SNDTIMEO, (char *)&tv,sizeof(struct timeval));
+        setsockopt(client_socket, SOL_SOCKET, SO_RCVTIMEO, (char *)&tv,sizeof(struct timeval));
+
         std::cout << "Connection accepted from " << inet_ntoa(client_address.sin_addr) << ":" << ntohs(client_address.sin_port) << "\n";
         return client_socket;
     }
@@ -147,13 +158,16 @@ private:
 
 void Reset_State(int& cstat) {
     cstat = cstat - 2;
+    std::cout << "status reset to "  << cstat << std::endl;  
 }
 
 int main() {
 
     ServerSocket server_socket;
 
-    const int cout = 10;
+    const int cout = 20;
+    bool reconnect = false;
+
     for(int i=0; i<cout; i++) {
 
         // test_disconnect(i, 6);
@@ -165,26 +179,55 @@ int main() {
             stat = status::DATA;
         }
 
-        int err_no = server_socket.Send(stat, i);
+        int err_no_send = server_socket.Send(stat, i);
 
-        switch (err_no)
+        switch (err_no_send)
         {
             case 0: {
                 break;
             }
             case EPIPE: {
+                reconnect = true;
                 Reset_State(i);
-                server_socket.Reconnect();
                 break;
             }
             default: {
-                std::cerr << "Unexpected error occurred during send : " << strerror(err_no) << std::endl;
+                std::cerr << "Unexpected error occurred during send : " << "[" << err_no_send << "] - " << strerror(err_no_send) << std::endl;
                 exit(EXIT_FAILURE);
                 break;
             }
         }
 
-        // server_socket.WaitForAck(i);
+        if(reconnect) {
+            server_socket.Reconnect();
+            reconnect = false;
+        } else{
+            int err_no_ack = server_socket.WaitForAck(i);
+
+            switch (err_no_ack)
+            {
+                case 0: {
+                    break;
+                }
+                case EPIPE: {
+                    reconnect = true;
+                    Reset_State(i);
+                    break;
+                }
+                case EAGAIN: {
+                    reconnect = true;
+                    Reset_State(i);
+                    break;
+                }
+                default: {
+                    std::cerr << "Unexpected error occurred during ack : " << "[" << err_no_ack << "] - " << strerror(err_no_ack) << std::endl;
+                    exit(EXIT_FAILURE);
+                    break;
+                }
+            }
+
+        } 
+            
 
         std::this_thread::sleep_for(std::chrono::milliseconds(100));
     }
